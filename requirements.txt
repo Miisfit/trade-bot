@@ -5,4 +5,3 @@ ccxt
 yfinance
 requests
 gunicorn
-plotly
