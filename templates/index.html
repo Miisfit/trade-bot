@@ -1,68 +1,50 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Futures AI Bot</title>
-
+<title>Ultimate Futures Assistant</title>
 <style>
-body{
-background:#111;
-color:white;
-font-family:Arial;
-text-align:center;
-}
-
-.panel{
-background:#1e1e1e;
-padding:20px;
-margin:auto;
-width:350px;
-border-radius:10px;
-}
-
-input,button{
-width:90%;
-margin:5px;
-padding:8px;
-border-radius:6px;
-border:none;
-}
-
-button{
-background:#4CAF50;
-color:white;
-font-weight:bold;
-}
+body{background:#111;color:white;font-family:Arial;text-align:center;}
+.panel{background:#1e1e1e;padding:20px;margin:auto;width:500px;border-radius:10px;}
+input,button{width:90%;margin:5px;padding:8px;border-radius:6px;border:none;}
+button{background:#4CAF50;color:white;font-weight:bold;}
+ul{list-style:none;padding-left:0;}
+li{margin:3px 0;}
+.signal-bullish{color:#4CAF50;font-weight:bold;}
+.signal-bearish{color:#FF4136;font-weight:bold;}
+.signal-neutral{color:#FFD700;font-weight:bold;}
 </style>
 </head>
-
 <body>
-
-<h1>🚀 Futures AI Bot</h1>
-
+<h1>🚀 Ultimate Futures Assistant</h1>
 <div class="panel">
-
 <form method="POST">
-
-Symbol<br>
-<input name="symbol" value="{{config.symbol}}">
-
-Leverage<br>
-<input name="leverage" value="{{config.leverage}}">
-
-<button name="start">Start</button>
-<button name="stop">Stop</button>
-
+<label>Watchlist (comma separated)</label><br>
+<input name="symbols" value="{{','.join(watchlist)}}">
+<br>
+<button>Update Watchlist</button>
 </form>
 
-<h2>Status: {{ "Running" if running else "Stopped" }}</h2>
-<h2>Signal: {{signal}}</h2>
-<h2>Position: {{position}}</h2>
-<h2>Balance: ${{balance}}</h2>
-
-<h3>Recent Trades</h3>
+<h2>Market Signals</h2>
 <ul>
-{% for trade in history %}
-<li>{{trade.type}} Profit: ${{trade.profit}} Balance: ${{trade.balance}}</li>
+{% for symbol in watchlist %}
+<li>
+<strong>{{symbol}}</strong>: 
+<span class="signal-{{signals.get(symbol,'Neutral').lower()}}">{{signals.get(symbol,'Loading...')}}</span>
+<ul>
+{% for headline in news.get(symbol,[]) %}
+<li>{{headline}}</li>
+{% endfor %}
+</ul>
+</li>
+{% endfor %}
+</ul>
+
+<h2>Paper Trading</h2>
+<p>Balance: ${{paper_balance}}</p>
+<h3>Trade History (Last 6)</h3>
+<ul>
+{% for trade in trade_history[-6:] %}
+<li>{{trade.timestamp}} | {{trade.symbol}} | {{trade.signal}} | Profit: ${{trade.profit}} | Balance: ${{trade.balance}}</li>
 {% endfor %}
 </ul>
 
