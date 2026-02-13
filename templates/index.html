@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>AI Trading Bot</title>
+
+<style>
+body {
+    font-family: Arial;
+    background: #111;
+    color: white;
+    text-align: center;
+}
+
+.container {
+    background: #1e1e1e;
+    padding: 20px;
+    border-radius: 12px;
+    width: 350px;
+    margin: auto;
+}
+
+input, select, button {
+    width: 90%;
+    padding: 8px;
+    margin: 6px;
+    border-radius: 6px;
+    border: none;
+}
+
+button {
+    background: #4CAF50;
+    color: white;
+    font-weight: bold;
+}
+</style>
+
+</head>
+
+<body>
+
+<h1>🤖 AI Trading Dashboard</h1>
+
+<div class="container">
+
+<form method="POST">
+
+<label>Symbol</label><br>
+<input name="symbol" value="{{config.symbol}}"><br>
+
+<label>Market</label><br>
+<select name="market">
+<option value="crypto">Crypto</option>
+<option value="stock">Stock</option>
+</select><br>
+
+<label>Leverage</label><br>
+<input name="leverage" value="{{config.leverage}}"><br>
+
+<button name="start">Start Bot</button>
+<button name="stop">Stop Bot</button>
+
+</form>
+
+<h2>Status: {{ "Running" if running else "Stopped" }}</h2>
+<h2>Signal: {{signal}}</h2>
+
+</div>
+
+</body>
+</html>
