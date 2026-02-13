@@ -1,6 +1,6 @@
 flask
 pandas
-pandas-ta
 yfinance
 ccxt
 requests
+numpy
