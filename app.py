@@ -6,25 +6,24 @@ import yfinance as yf
 import requests
 import threading
 import time
-import os
 from datetime import datetime
 
-# ---------------------------
-# APP SETUP
-# ---------------------------
 app = Flask(__name__)
 
 # ---------------------------
 # GLOBAL STATE
 # ---------------------------
-watchlist = ["BTC/USDT","ETH/USDT","SOL/USDT","ES=F","NQ=F"]  # Futures + crypto
+watchlist = ["BTC/USDT","ETH/USDT","SOL/USDT","ES=F","NQ=F"]
 market_data = {}
 signals = {}
 news_data = {}
 trade_history = []
 paper_balance = 10000
+positions = {}
 
-WEBHOOK = ""  # Add TradingView webhook later
+# API KEYS
+FINNHUB_KEY = "d67j109r01qobepi65rgd67j109r01qobepi65s0"
+CRYPTOPANIC_KEY = "7ef855c63c8d96f12d574cbc3562c999effd1735"
 
 # ---------------------------
 # INDICATORS
@@ -47,7 +46,7 @@ def atr(df, length=14):
     return ranges.max(axis=1).rolling(length).mean()
 
 # ---------------------------
-# MARKET DATA
+# DATA FETCHERS
 # ---------------------------
 def get_crypto(symbol):
     exchange = ccxt.binance()
@@ -62,52 +61,57 @@ def get_stock(symbol):
     return df
 
 def get_futures(symbol):
-    if "USDT" in symbol or symbol in ["BTC/USDT","ETH/USDT","SOL/USDT"]:
+    if "USDT" in symbol:
         return get_crypto(symbol)
     else:
         return get_stock(symbol)
 
 # ---------------------------
-# SIGNAL CALCULATION
+# NEWS FETCHER
+# ---------------------------
+def fetch_news(symbol):
+    try:
+        if "USDT" in symbol:  # Crypto
+            url = f"https://cryptopanic.com/api/v1/posts/?auth_token={CRYPTOPANIC_KEY}&currencies={symbol.split('/')[0]}&kind=news"
+            response = requests.get(url).json()
+            posts = response.get("results", [])
+            headlines = [p["title"] for p in posts[:5]]
+            summary = " | ".join(headlines[:3]) if headlines else "No recent crypto news"
+            return headlines[:5], summary
+        else:  # Stocks / Futures
+            url = f"https://finnhub.io/api/v1/company-news?symbol={symbol}&from={datetime.now().strftime('%Y-%m-%d')}&to={datetime.now().strftime('%Y-%m-%d')}&token={FINNHUB_KEY}"
+            news = requests.get(url).json()
+            headlines = [n["headline"] for n in news[:5]]
+            summary = " | ".join(headlines[:3]) if headlines else "No recent news"
+            return headlines[:5], summary
+    except:
+        return ["Error fetching news"], "Error fetching news"
+
+# ---------------------------
+# STRATEGY / SIGNALS
 # ---------------------------
 def compute_signal(df):
     df["EMA20"] = ema(df["close"],20)
     df["EMA50"] = ema(df["close"],50)
     df["RSI"] = rsi(df["close"])
     df["ATR"] = atr(df)
-
     last = df.iloc[-1]
+
     if last["EMA20"] > last["EMA50"] and last["RSI"] < 65:
-        return "Bullish"
+        return "BUY"
     elif last["EMA20"] < last["EMA50"] and last["RSI"] > 35:
-        return "Bearish"
+        return "SELL"
     else:
-        return "Neutral"
+        return "HOLD"
 
 # ---------------------------
-# NEWS FETCHER (SENTIMENT)
+# PAPER TRADING
 # ---------------------------
-def fetch_news(symbol):
-    try:
-        # Replace with your API key
-        API_KEY = "d67j109r01qobepi65rgd67j109r01qobepi65s0"
-        url = f"https://finnhub.io/api/v1/company-news?symbol={symbol}&from={datetime.now().strftime('%Y-%m-%d')}&to={datetime.now().strftime('%Y-%m-%d')}&token={API_KEY}"
-        news = requests.get(url).json()
-        headlines = [n["headline"] for n in news[:5]]
-        return headlines
-    except:
-        return ["No news available"]
-
-# ---------------------------
-# PAPER TRADING SIMULATION
-# ---------------------------
-positions = {}
-
 def update_paper_balance(symbol, signal, price):
     global paper_balance, trade_history, positions
-    if signal == "Bullish":
+    if signal == "BUY":
         positions[symbol] = price
-    elif signal == "Bearish" and symbol in positions:
+    elif signal == "SELL" and symbol in positions:
         profit = price - positions[symbol]
         paper_balance += profit
         trade_history.append({
@@ -115,7 +119,7 @@ def update_paper_balance(symbol, signal, price):
             "profit": round(profit,2),
             "balance": round(paper_balance,2),
             "timestamp": datetime.now().strftime("%H:%M:%S"),
-            "signal": "Short Closed"
+            "signal": "SELL Closed"
         })
         del positions[symbol]
 
@@ -129,13 +133,14 @@ def assistant_loop():
             try:
                 df = get_futures(symbol)
                 market_data[symbol] = df
-                signal = compute_signal(df)
-                signals[symbol] = signal
-                news_data[symbol] = fetch_news(symbol)
-                update_paper_balance(symbol, signal, df["close"].iloc[-1])
+                sig = compute_signal(df)
+                signals[symbol] = sig
+                news, summary = fetch_news(symbol)
+                news_data[symbol] = {"headlines": news, "summary": summary}
+                update_paper_balance(symbol, sig, df["close"].iloc[-1])
             except:
-                signals[symbol] = "Error"
-                news_data[symbol] = ["Error fetching news"]
+                signals[symbol] = "HOLD"
+                news_data[symbol] = {"headlines":["Error fetching news"], "summary":"Error fetching news"}
         time.sleep(300)
 
 threading.Thread(target=assistant_loop, daemon=True).start()
@@ -154,12 +159,12 @@ def index():
         watchlist=watchlist,
         signals=signals,
         news=news_data,
-        trade_history=trade_history,
+        trade_history=trade_history[-10:],
         paper_balance=paper_balance
     )
 
 # ---------------------------
-# RUN SERVER
+# RUN
 # ---------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT",10000)))
