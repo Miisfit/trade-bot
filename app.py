@@ -77,4 +77,89 @@ def compute_signal(df):
     df["ATR"] = atr(df)
 
     last = df.iloc[-1]
-    if last["EMA20"] > last
+    if last["EMA20"] > last["EMA50"] and last["RSI"] < 65:
+        return "Bullish"
+    elif last["EMA20"] < last["EMA50"] and last["RSI"] > 35:
+        return "Bearish"
+    else:
+        return "Neutral"
+
+# ---------------------------
+# NEWS FETCHER (SENTIMENT)
+# ---------------------------
+def fetch_news(symbol):
+    try:
+        # Replace with your API key
+        API_KEY = "YOUR_API_KEY"
+        url = f"https://finnhub.io/api/v1/company-news?symbol={symbol}&from={datetime.now().strftime('%Y-%m-%d')}&to={datetime.now().strftime('%Y-%m-%d')}&token={API_KEY}"
+        news = requests.get(url).json()
+        headlines = [n["headline"] for n in news[:5]]
+        return headlines
+    except:
+        return ["No news available"]
+
+# ---------------------------
+# PAPER TRADING SIMULATION
+# ---------------------------
+positions = {}
+
+def update_paper_balance(symbol, signal, price):
+    global paper_balance, trade_history, positions
+    if signal == "Bullish":
+        positions[symbol] = price
+    elif signal == "Bearish" and symbol in positions:
+        profit = price - positions[symbol]
+        paper_balance += profit
+        trade_history.append({
+            "symbol": symbol,
+            "profit": round(profit,2),
+            "balance": round(paper_balance,2),
+            "timestamp": datetime.now().strftime("%H:%M:%S"),
+            "signal": "Short Closed"
+        })
+        del positions[symbol]
+
+# ---------------------------
+# BOT LOOP
+# ---------------------------
+def assistant_loop():
+    global market_data, signals, news_data
+    while True:
+        for symbol in watchlist:
+            try:
+                df = get_futures(symbol)
+                market_data[symbol] = df
+                signal = compute_signal(df)
+                signals[symbol] = signal
+                news_data[symbol] = fetch_news(symbol)
+                update_paper_balance(symbol, signal, df["close"].iloc[-1])
+            except:
+                signals[symbol] = "Error"
+                news_data[symbol] = ["Error fetching news"]
+        time.sleep(300)
+
+threading.Thread(target=assistant_loop, daemon=True).start()
+
+# ---------------------------
+# DASHBOARD
+# ---------------------------
+@app.route("/", methods=["GET","POST"])
+def index():
+    global watchlist
+    if request.method == "POST":
+        symbols = request.form.get("symbols","BTC/USDT,ETH/USDT,ES=F,NQ=F").upper()
+        watchlist = [s.strip() for s in symbols.split(",")]
+    return render_template(
+        "index.html",
+        watchlist=watchlist,
+        signals=signals,
+        news=news_data,
+        trade_history=trade_history,
+        paper_balance=paper_balance
+    )
+
+# ---------------------------
+# RUN SERVER
+# ---------------------------
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT",10000)))
