@@ -1,6 +1,6 @@
 flask
 pandas
-yfinance
-ccxt
 numpy
+ccxt
+requests
 gunicorn
