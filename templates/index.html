@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>AI Trading Bot</title>
+</head>
+<body>
+
+<h1>AI Trading Dashboard</h1>
+
+<form method="POST">
+
+Symbol:
+<input name="symbol" value="{{config.symbol}}"><br>
+
+Market:
+<select name="market">
+<option value="crypto">Crypto</option>
+<option value="stock">Stock</option>
+</select><br>
+
+Leverage:
+<input name="leverage" value="{{config.leverage}}"><br><br>
+
+<button name="start">Start Bot</button>
+<button name="stop">Stop Bot</button>
+
+</form>
+
+<h2>Status: {{ "Running" if running else "Stopped" }}</h2>
+<h2>Signal: {{signal}}</h2>
+
+</body>
+</html>
