@@ -90,7 +90,7 @@ def compute_signal(df):
 def fetch_news(symbol):
     try:
         # Replace with your API key
-        API_KEY = "YOUR_API_KEY"
+        API_KEY = "d67j109r01qobepi65rgd67j109r01qobepi65s0"
         url = f"https://finnhub.io/api/v1/company-news?symbol={symbol}&from={datetime.now().strftime('%Y-%m-%d')}&to={datetime.now().strftime('%Y-%m-%d')}&token={API_KEY}"
         news = requests.get(url).json()
         headlines = [n["headline"] for n in news[:5]]
