@@ -1,70 +1,71 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>AI Trading Bot</title>
+<title>Futures AI Bot</title>
 
 <style>
-body {
-    font-family: Arial;
-    background: #111;
-    color: white;
-    text-align: center;
+body{
+background:#111;
+color:white;
+font-family:Arial;
+text-align:center;
 }
 
-.container {
-    background: #1e1e1e;
-    padding: 20px;
-    border-radius: 12px;
-    width: 350px;
-    margin: auto;
+.panel{
+background:#1e1e1e;
+padding:20px;
+margin:auto;
+width:350px;
+border-radius:10px;
 }
 
-input, select, button {
-    width: 90%;
-    padding: 8px;
-    margin: 6px;
-    border-radius: 6px;
-    border: none;
+input,button{
+width:90%;
+margin:5px;
+padding:8px;
+border-radius:6px;
+border:none;
 }
 
-button {
-    background: #4CAF50;
-    color: white;
-    font-weight: bold;
+button{
+background:#4CAF50;
+color:white;
+font-weight:bold;
 }
 </style>
-
 </head>
 
 <body>
 
-<h1>🤖 AI Trading Dashboard</h1>
+<h1>🚀 Futures AI Bot</h1>
 
-<div class="container">
+<div class="panel">
 
 <form method="POST">
 
-<label>Symbol</label><br>
-<input name="symbol" value="{{config.symbol}}"><br>
+Symbol<br>
+<input name="symbol" value="{{config.symbol}}">
 
-<label>Market</label><br>
-<select name="market">
-<option value="crypto">Crypto</option>
-<option value="stock">Stock</option>
-</select><br>
+Leverage<br>
+<input name="leverage" value="{{config.leverage}}">
 
-<label>Leverage</label><br>
-<input name="leverage" value="{{config.leverage}}"><br>
-
-<button name="start">Start Bot</button>
-<button name="stop">Stop Bot</button>
+<button name="start">Start</button>
+<button name="stop">Stop</button>
 
 </form>
 
 <h2>Status: {{ "Running" if running else "Stopped" }}</h2>
 <h2>Signal: {{signal}}</h2>
+<h2>Position: {{position}}</h2>
+<h2>Balance: ${{balance}}</h2>
+
+<h3>Recent Trades</h3>
+<ul>
+{% for trade in history %}
+<li>{{trade.type}} Profit: ${{trade.profit}} Balance: ${{trade.balance}}</li>
+{% endfor %}
+</ul>
 
 </div>
-
 </body>
 </html>
