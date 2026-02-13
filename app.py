@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request
 import yfinance as yf
 import pandas as pd
-import pandas_ta as ta
+import numpy as np
 import ccxt
 import requests
 import threading
